@@ -1,0 +1,46 @@
+{
+  "name": "sandbox-app-template",
+  "private": true,
+  "workspaces": [
+    "packages/web"
+  ],
+  "scripts": {
+    "dev": "cd packages/web && bunx vite",
+    "dev:desktop": "cd packages/desktop && bunx vite",
+    "dev:mobile": "cd packages/mobile && bunx expo start --port $(bun --print \"require('../../__ports.cjs').mobile\")",
+    "build": "cd packages/web && npm run build",
+    "build:web": "cd packages/web && bunx vite build",
+    "start": "node server.js",
+    "serve": "bun run tooling/serve.ts",
+    "check:config": "bun --env-file=.env run packages/web/tooling/check-config.ts",
+    "stop": "pm2 delete web-app 2>/dev/null || true",
+    "kill:port": "bun run internal:kill-port",
+    "lint": "runkit lint",
+    "lint:fix": "runkit lint --fix",
+    "typecheck": "cd packages/web && npm run typecheck",
+    "db:generate": "cd packages/web && npm run db:generate",
+    "db:migrate": "cd packages/web && npm run db:migrate",
+    "db:migrate:club": "cd packages/web && npm run db:migrate:club",
+    "db:push": "cd packages/web && npm run db:push",
+    "internal:kill-port": "bun run tooling/kill-port.ts",
+    "start:pm2": "pm2 startOrRestart ecosystem.config.cjs --update-env"
+  },
+  "devDependencies": {
+    "@runablehq/runkit": "0.1.1",
+    "@tursodatabase/api": "^1.9.2",
+    "@types/bun": "1.3.14",
+    "oxfmt": "0.54.0",
+    "turbo": "2.9.18",
+    "typescript": "7.0.1-rc"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1023.0",
+    "@libsql/client": "^0.17.2",
+    "cloudflare": "^5.2.0",
+    "pm2": "^7.0.1"
+  },
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.12"
+  }
+}
