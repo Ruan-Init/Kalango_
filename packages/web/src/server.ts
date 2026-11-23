@@ -9,6 +9,19 @@ const sourceDir = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.resolve(sourceDir, "../dist");
 const indexPath = path.join(distDir, "index.html");
 
+function withSecurityHeaders(response: Response): Response {
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("Content-Security-Policy", "frame-ancestors 'none'");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  response.headers.set(
+    "Strict-Transport-Security",
+    "max-age=31536000; includeSubDomains",
+  );
+  return response;
+}
+
 const contentTypes: Record<string, string> = {
   ".avif": "image/avif",
   ".css": "text/css; charset=utf-8",
@@ -40,7 +53,7 @@ const server = serve({
     const url = new URL(request.url);
 
     if (url.pathname.startsWith("/api")) {
-      return app.fetch(request);
+      return withSecurityHeaders(await app.fetch(request));
     }
 
     let pathname: string;
@@ -48,7 +61,7 @@ const server = serve({
       pathname = decodeURIComponent(url.pathname);
     } catch (error) {
       if (error instanceof URIError) {
-        return new Response("Invalid URL", { status: 400 });
+        return withSecurityHeaders(new Response("Invalid URL", { status: 400 }));
       }
       throw error;
     }
@@ -60,27 +73,33 @@ const server = serve({
       relativePath.startsWith(`..${path.sep}`) ||
       path.isAbsolute(relativePath)
     ) {
-      return new Response("Not found", { status: 404 });
+      return withSecurityHeaders(new Response("Not found", { status: 404 }));
     }
 
     const file = await readStaticFile(filePath);
     if (file) {
       const contentType =
         contentTypes[path.extname(filePath).toLowerCase()] ?? "application/octet-stream";
-      return new Response(file, { headers: { "Content-Type": contentType } });
+      return withSecurityHeaders(
+        new Response(file, { headers: { "Content-Type": contentType } }),
+      );
     }
 
     const index = await readStaticFile(indexPath);
     if (index) {
-      return new Response(index, {
-        headers: { "Content-Type": "text/html; charset=utf-8" },
-      });
+      return withSecurityHeaders(
+        new Response(index, {
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        }),
+      );
     }
 
-    return new Response("Build output not found. Run `npm run build` first.", {
-      status: 500,
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
-    });
+    return withSecurityHeaders(
+      new Response("Build output not found. Run `npm run build` first.", {
+        status: 500,
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      }),
+    );
   },
 });
 
